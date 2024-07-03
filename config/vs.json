@@ -18,8 +18,8 @@
             "which_dataset": {  
                 "name": ["data.dataset", "VSDataset"], 
                 "args":{ 
-                    "data_root": "../data/ddpm_visual_servo/img",
-                    "data_flist": "../data/ddpm_visual_servo/img/train.flist",
+                    "data_root": "../data/ddpm_visual_servo/fixed_relative_pose_img",
+                    "data_flist": "../data/ddpm_visual_servo/fixed_relative_pose_img/train.flist",
                     "data_len": -1
                 } 
             },
