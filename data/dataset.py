@@ -33,7 +33,7 @@ def is_image_file(filename):
 
 def make_dataset(dir):
     if os.path.isfile(dir):
-        images = [i for i in np.genfromtxt(dir, dtype=np.str, encoding="utf-8")]
+        images = [i for i in np.genfromtxt(dir, dtype=np.str_, encoding="utf-8")]
     else:
         images = []
         assert os.path.isdir(dir), "%s is not a valid directory" % dir

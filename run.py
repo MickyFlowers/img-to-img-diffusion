@@ -79,6 +79,7 @@ def main_worker(gpu, ngpus_per_node, opt):
 
 
 if __name__ == "__main__":
+    print(torch.cuda.current_device())
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-c",
@@ -108,6 +109,7 @@ if __name__ == "__main__":
 
     """ cuda devices """
     gpu_str = ",".join(str(x) for x in opt["gpu_ids"])
+    
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu_str
     print("export CUDA_VISIBLE_DEVICES={}".format(gpu_str))
 

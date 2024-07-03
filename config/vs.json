@@ -1,6 +1,6 @@
 {
-    "name": "colorization_mirflickr25k", 
-    "gpu_ids": [0], 
+    "name": "vs", 
+    "gpu_ids": [0,1], 
     "seed" : -1, 
     "finetune_norm": false, 
 
@@ -18,15 +18,15 @@
             "which_dataset": {  
                 "name": ["data.dataset", "VSDataset"], 
                 "args":{ 
-                    "data_root": "../data/ddpm_visual_servo/fixed_relative_pose_img",
-                    "data_flist": "../data/ddpm_visual_servo/fixed_relative_pose_img/train.flist",
+                    "data_root": "/cyx/data/vs/fixed_relative_pose_img",
+                    "data_flist": "/cyx/data/vs/fixed_relative_pose_img/train.flist",
                     "data_len": -1
                 } 
             },
             "dataloader":{
                 "validation_split": 2, 
                 "args":{ 
-                    "batch_size": 4, 
+                    "batch_size": 8, 
                     "num_workers": 4,
                     "shuffle": true,
                     "pin_memory": true,
@@ -43,10 +43,10 @@
         },
         "test": { 
             "which_dataset": {
-                "name": "ColorizationDataset", 
+                "name": "VSDataset", 
                 "args":{
-                    "data_root": "datasets/mirflickr25k/images",
-                    "data_flist": "datasets/mirflickr25k/flist/test.flist"
+                    "data_root": "/cyx/data/vs/fixed_relative_pose_img",
+                    "data_flist": "/cyx/data/vs/fixed_relative_pose_img/train.flist"
                 }
             },
             "dataloader":{
@@ -64,7 +64,7 @@
             "name": ["models.model", "Palette"],
             "args": {
                 "sample_num": 8, 
-                "task": "colorization",
+                "task": "vs",
                 "ema_scheduler": {
                     "ema_start": 1,
                     "ema_iter": 1,
@@ -96,8 +96,7 @@
                         ],
                         "num_head_channels": 32,
                         "res_blocks": 2,
-                        "dropout": 0.2,
-                        "image_size": 224
+                        "dropout": 0.2
                     },
                     "beta_schedule": {
                         "train": {
