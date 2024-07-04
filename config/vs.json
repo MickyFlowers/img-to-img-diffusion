@@ -24,7 +24,7 @@
                 } 
             },
             "dataloader":{
-                "validation_split": 2, 
+                "validation_split": 0.05, 
                 "args":{ 
                     "batch_size": 8, 
                     "num_workers": 4,
@@ -33,7 +33,7 @@
                     "drop_last": true
                 },
                 "val_args":{ 
-                    "batch_size": 1, 
+                    "batch_size": 2, 
                     "num_workers": 4,
                     "shuffle": false,
                     "pin_memory": true,
@@ -96,7 +96,8 @@
                         ],
                         "num_head_channels": 32,
                         "res_blocks": 2,
-                        "dropout": 0.2
+                        "dropout": 0.2,
+                        "image_size": 224
                     },
                     "beta_schedule": {
                         "train": {
@@ -126,14 +127,14 @@
     "train": { 
         "n_epoch": 1e8, 
         "n_iter": 1e8, 
-        "val_epoch": 5, 
+        "val_epoch": 1, 
         "save_checkpoint_epoch": 10,
         "log_iter": 1e4, 
         "tensorboard" : true 
     },
     
     "debug": { 
-        "val_epoch": 1,
+        "val_epoch": 5,
         "save_checkpoint_epoch": 1,
         "log_iter": 10,
         "debug_split": 50
