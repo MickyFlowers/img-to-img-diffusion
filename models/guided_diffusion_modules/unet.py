@@ -344,7 +344,6 @@ class UNet(nn.Module):
 
     def __init__(
         self,
-        image_size,
         in_channel,
         inner_channel,
         out_channel,
@@ -368,7 +367,6 @@ class UNet(nn.Module):
         if num_heads_upsample == -1:
             num_heads_upsample = num_heads
 
-        self.image_size = image_size
         self.in_channel = in_channel
         self.inner_channel = inner_channel
         self.out_channel = out_channel
@@ -548,7 +546,6 @@ if __name__ == '__main__':
     b, c, h, w = 3, 6, 64, 64
     timsteps = 100
     model = UNet(
-        image_size=h,
         in_channel=c,
         inner_channel=64,
         out_channel=3,

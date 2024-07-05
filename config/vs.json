@@ -1,6 +1,6 @@
 {
     "name": "vs", 
-    "gpu_ids": [0,1], 
+    "gpu_ids": [0], 
     "seed" : -1, 
     "finetune_norm": false, 
 
@@ -18,15 +18,16 @@
             "which_dataset": {  
                 "name": ["data.dataset", "VSDataset"], 
                 "args":{ 
-                    "data_root": "/cyx/data/vs/fixed_relative_pose_img",
-                    "data_flist": "/cyx/data/vs/fixed_relative_pose_img/train.flist",
-                    "data_len": -1
+                    "data_root": "/cyx/data/vs/fixed_relative_pose_img-2",
+                    "data_flist": "/cyx/data/vs/fixed_relative_pose_img-2/train_debug.flist",
+                    "data_len": -1,
+                    "image_size": [112, 224]
                 } 
             },
             "dataloader":{
-                "validation_split": 0.05, 
+                "validation_split": 2, 
                 "args":{ 
-                    "batch_size": 8, 
+                    "batch_size": 2, 
                     "num_workers": 4,
                     "shuffle": true,
                     "pin_memory": true,
@@ -45,8 +46,8 @@
             "which_dataset": {
                 "name": "VSDataset", 
                 "args":{
-                    "data_root": "/cyx/data/vs/fixed_relative_pose_img",
-                    "data_flist": "/cyx/data/vs/fixed_relative_pose_img/train.flist"
+                    "data_root": "/cyx/data/vs/fixed_relative_pose_img-2",
+                    "data_flist": "/cyx/data/vs/fixed_relative_pose_img-2/train_debug.flist"
                 }
             },
             "dataloader":{
@@ -96,8 +97,7 @@
                         ],
                         "num_head_channels": 32,
                         "res_blocks": 2,
-                        "dropout": 0.2,
-                        "image_size": 224
+                        "dropout": 0.2
                     },
                     "beta_schedule": {
                         "train": {
@@ -127,7 +127,7 @@
     "train": { 
         "n_epoch": 1e8, 
         "n_iter": 1e8, 
-        "val_epoch": 1, 
+        "val_epoch": 5, 
         "save_checkpoint_epoch": 10,
         "log_iter": 1e4, 
         "tensorboard" : true 
