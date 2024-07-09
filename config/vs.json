@@ -1,6 +1,6 @@
 {
     "name": "vs", 
-    "gpu_ids": [0], 
+    "gpu_ids": [1], 
     "seed" : -1, 
     "finetune_norm": false, 
 
@@ -10,7 +10,7 @@
         "tb_logger": "tb_logger", 
         "results": "results",
         "checkpoint": "checkpoint",
-        "resume_state": null 
+        "resume_state": "logs/3/checkpoint/80"
     },
 
     "datasets": {
@@ -19,15 +19,15 @@
                 "name": ["data.dataset", "VSDataset"], 
                 "args":{ 
                     "data_root": "/cyx/data/vs/fixed_relative_pose_img-2",
-                    "data_flist": "/cyx/data/vs/fixed_relative_pose_img-2/train_debug.flist",
+                    "data_flist": "/cyx/data/vs/fixed_relative_pose_img-2/train.flist",
                     "data_len": -1,
-                    "image_size": [112, 224]
+                    "image_size": [224, 224]
                 } 
             },
             "dataloader":{
                 "validation_split": 2, 
                 "args":{ 
-                    "batch_size": 2, 
+                    "batch_size": 8, 
                     "num_workers": 4,
                     "shuffle": true,
                     "pin_memory": true,
@@ -47,7 +47,7 @@
                 "name": "VSDataset", 
                 "args":{
                     "data_root": "/cyx/data/vs/fixed_relative_pose_img-2",
-                    "data_flist": "/cyx/data/vs/fixed_relative_pose_img-2/train_debug.flist"
+                    "data_flist": "/cyx/data/vs/fixed_relative_pose_img-2/test.flist"
                 }
             },
             "dataloader":{
@@ -72,7 +72,7 @@
                     "ema_decay": 0.9999
                 },
                 "optimizers": [
-                    { "lr": 5e-5, "weight_decay": 0}
+                    { "lr": 3e-5, "weight_decay": 0}
                 ]
             }
         }, 
@@ -117,7 +117,7 @@
             }
         ],
         "which_losses": [ 
-            "mse_loss" 
+            "l1_loss" 
         ],
         "which_metrics": [ 
             "mae" 

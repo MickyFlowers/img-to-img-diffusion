@@ -9,6 +9,7 @@ from torchvision.models.inception import inception_v3
 import numpy as np
 from scipy.stats import entropy
 
+
 def mae(input, target):
     with torch.no_grad():
         loss = nn.L1Loss()

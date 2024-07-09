@@ -109,10 +109,12 @@ if __name__ == "__main__":
 
     """ cuda devices """
     gpu_str = ",".join(str(x) for x in opt["gpu_ids"])
-    
-    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_str
-    print("export CUDA_VISIBLE_DEVICES={}".format(gpu_str))
 
+    # os.environ["CUDA_VISIBLE_DEVICES"] = gpu_str
+    if len(opt["gpu_ids"]) == 1:
+        torch.cuda.set_device(opt["gpu_ids"][0])
+    
+    print("export CUDA_VISIBLE_DEVICES={}".format(gpu_str))
     """ use DistributedDataParallel(DDP) and multiprocessing for multi-gpu training"""
     # [Todo]: multi GPU on multi machine
     if opt["distributed"]:
