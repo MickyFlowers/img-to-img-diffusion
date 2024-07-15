@@ -160,7 +160,15 @@ class Palette(BaseModel):
                 self.writer.save_images(self.save_current_results())
 
         return self.val_metrics.result()
-
+    
+    def eval(self, cond_img):
+        self.cond_image = cond_img
+        self.netG.eval()
+        with torch.no_grad():
+            self.output, self.visuals = self.netG.restoration(self.cond_image, sample_num=self.sample_num)
+            
+        return self.output.detach().float().cpu()
+        
     def test(self):
         self.netG.eval()
         self.test_metrics.reset()

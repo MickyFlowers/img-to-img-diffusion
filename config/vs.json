@@ -10,7 +10,7 @@
         "tb_logger": "tb_logger", 
         "results": "results",
         "checkpoint": "checkpoint",
-        "resume_state": "logs/3/checkpoint/80"
+        "resume_state": "logs/train_vs_240709_075919/checkpoint/70"
     },
 
     "datasets": {
@@ -21,7 +21,7 @@
                     "data_root": "/cyx/data/vs/fixed_relative_pose_img-2",
                     "data_flist": "/cyx/data/vs/fixed_relative_pose_img-2/train.flist",
                     "data_len": -1,
-                    "image_size": [224, 224]
+                    "image_size": [240, 320]
                 } 
             },
             "dataloader":{
@@ -46,13 +46,13 @@
             "which_dataset": {
                 "name": "VSDataset", 
                 "args":{
-                    "data_root": "/cyx/data/vs/fixed_relative_pose_img-2",
-                    "data_flist": "/cyx/data/vs/fixed_relative_pose_img-2/test.flist"
+                    "data_root": "/cyx/data/vs/debug",
+                    "data_flist": "/cyx/data/vs/debug/test.flist"
                 }
             },
             "dataloader":{
                 "args":{
-                    "batch_size": 8,
+                    "batch_size": 1,
                     "num_workers": 4,
                     "pin_memory": true
                 }
@@ -93,7 +93,7 @@
                             8
                         ],
                         "attn_res": [
-                            16
+                            8
                         ],
                         "num_head_channels": 32,
                         "res_blocks": 2,
