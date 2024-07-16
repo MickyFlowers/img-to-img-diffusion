@@ -1,6 +1,6 @@
 {
     "name": "vs", 
-    "gpu_ids": [1], 
+    "gpu_ids": [0], 
     "seed" : -1, 
     "finetune_norm": false, 
 
@@ -46,8 +46,8 @@
             "which_dataset": {
                 "name": "VSDataset", 
                 "args":{
-                    "data_root": "/cyx/data/vs/debug",
-                    "data_flist": "/cyx/data/vs/debug/test.flist"
+                    "data_root": "./test_data",
+                    "data_flist": "./test_data/test.flist"
                 }
             },
             "dataloader":{
@@ -108,7 +108,7 @@
                         },
                         "test": {
                             "schedule": "linear",
-                            "n_timestep": 1000,
+                            "n_timestep": 500,
                             "linear_start": 1e-4,
                             "linear_end": 0.09
                         }

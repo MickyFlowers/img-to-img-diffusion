@@ -1,21 +1,14 @@
-import sys
 import numpy as np
 import cv2
-from omni.isaac.core.utils.extensions import enable_extension
-
-# enable_extension("omni.isaac.robot_assembler")
-
 from omni.isaac.core.utils.stage import add_reference_to_stage
 
-# from omni.isaac.robot_assembler import RobotAssembler
 from omni.isaac.core import World
-from omni.isaac.core.robots import Robot
 from omni.isaac.sensor import Camera
 from omni.isaac.core.prims import RigidPrim, GeometryPrim
 from scipy.spatial.transform import Rotation as R
-from omni.isaac.core.articulations import Articulation
 import matplotlib
-matplotlib.use('TkAgg')
+
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import inspect
 import sys
@@ -24,86 +17,16 @@ from tools.sample import samplePose
 import torch
 import torchvision
 import os
-import omni.replicator.core as rep
 import omni.isaac.core.utils.prims as prims_utils
-import argparse
-import os
-import warnings
-import torch.multiprocessing as mp
-# import copy
-from core.logger import VisualWriter, InfoLogger
-import core.praser as Praser
-import core.util as Util
-from data import define_dataloader
-from models import create_model, define_network, define_loss, define_metric
 from PIL import Image
 from tools.perception import Frame, PinholeCamera
 from tools.ibvs import IBVS
 import tools.action as action
-def main_worker(gpu, ngpus_per_node, opt):
-    """threads running on each GPU"""
-    if "local_rank" not in opt:
-        opt["local_rank"] = opt["global_rank"] = gpu
-        
-    if opt["distributed"]:
-        torch.cuda.set_device(int(opt["local_rank"]))
-        print("using GPU {} for training".format(int(opt["local_rank"])))
-        torch.distributed.init_process_group(
-            backend="nccl",
-            init_method=opt["init_method"],
-            world_size=opt["world_size"],
-            rank=opt["global_rank"],
-            group_name="mtorch",
-        )
-    """set seed and and cuDNN environment """
-    torch.backends.cudnn.enabled = True
-    warnings.warn(
-        "You have chosen to use cudnn for accleration. torch.backends.cudnn.enabled=True"
-    )
-    Util.set_seed(opt["seed"])
 
-    """ set logger """
-    phase_logger = InfoLogger(opt)
-    phase_writer = VisualWriter(opt, phase_logger)
-    phase_logger.info(
-        "Create the log file in directory {}.\n".format(opt["path"]["experiments_root"])
-    )
-
-    """set networks and dataset"""
-    phase_loader, val_loader = define_dataloader(
-        phase_logger, opt
-    )  # val_loader is None if phase is test.
-    networks = [
-        define_network(phase_logger, opt, item_opt)
-        for item_opt in opt["model"]["which_networks"]
-    ]
-
-    """ set metrics, loss, optimizer and  schedulers """
-    metrics = [
-        define_metric(phase_logger, item_opt)
-        for item_opt in opt["model"]["which_metrics"]
-    ]
-    losses = [
-        define_loss(phase_logger, item_opt) for item_opt in opt["model"]["which_losses"]
-    ]
-
-    model = create_model(
-        opt=opt,
-        networks=networks,
-        phase_loader=phase_loader,
-        val_loader=val_loader,
-        losses=losses,
-        metrics=metrics,
-        logger=phase_logger,
-        writer=phase_writer,
-    )
-    phase_logger.info("Begin model {}.".format(opt["phase"]))    
-    
-    return model
 
 class env:
     def __init__(self, root_path, render, physics_dt=1 / 60.0) -> None:
-        self.count = 0 
+        self.count = 0
         self.eva_count = 0
         self.success_count = 0
         self.total_pos_error = 0
@@ -116,10 +39,14 @@ class env:
                 [0.0, 0.0, 1.0],
             ]
         )
-        self.usd2opencv = np.array([[1.0,  0.0,  0.0, 0.0],
-                                    [0.0, -1.0,  0.0, 0.0],
-                                    [0.0,  0.0, -1.0, 0.0],
-                                    [0.0,  0.0,  0.0, 1.0]])
+        self.usd2opencv = np.array(
+            [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, -1.0, 0.0, 0.0],
+                [0.0, 0.0, -1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
         self.opencv2usd = np.linalg.inv(self.usd2opencv)
         # relative pose
         self.tar_relative_pos_upper = np.array([0.0, 0.0, 0.20])
@@ -129,8 +56,8 @@ class env:
 
         self.relative_pos_upper = np.array([0.0, 0.0, 0.4])
         self.relative_pos_lower = np.array([0.0, 0.0, 0.5])
-        self.relative_rot_upper = np.array([0.5, 0.5, np.pi/6])
-        self.relative_rot_lower = np.array([-0.5,-0.5, -np.pi/6])
+        self.relative_rot_upper = np.array([0.5, 0.5, np.pi / 6])
+        self.relative_rot_lower = np.array([-0.5, -0.5, -np.pi / 6])
 
         # in_hand_error_pose
         # TODO test
@@ -155,7 +82,16 @@ class env:
             root_path, "assets/pocketbook_pro_602_obj/pad.usd"
         )
         peg_asset_path = os.path.join(root_path, "assets/iphone/iphone.usd")
-
+        self.img_process = torchvision.transforms.Compose(
+            [
+                torchvision.transforms.Resize((240, 320)),
+                torchvision.transforms.ToTensor(),
+                torchvision.transforms.Normalize(
+                    mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]
+                ),
+            ]
+        )
+        self.reversed_img_process = torchvision.transforms.Resize((480, 640))
         print("peg_asset_path: ", peg_asset_path)
         print("hole_asset_path: ", hole_asset_path)
         self.camera_to_end_effector_pos = np.array([0.0, 0.1, 0.0])
@@ -236,13 +172,13 @@ class env:
         )
         self.policy = IBVS(use_median_depth=False)
         self.pinhole_camera = PinholeCamera(
-                        width=640,
-                        height=480,
-                        fx=616.56402588,
-                        fy=616.59606934,
-                        cx=330.48983765,
-                        cy=233.84162903,
-                    )
+            width=640,
+            height=480,
+            fx=616.56402588,
+            fy=616.59606934,
+            cx=330.48983765,
+            cy=233.84162903,
+        )
         self.reset()
 
     def setCameraParam(self):
@@ -293,7 +229,7 @@ class env:
         relative_pos = tar_relative_T[:3, 3]
         relative_q = tf.rot_matrix_to_quat(tar_relative_T[:3, :3])
         self.tar_peg_T = hole_T @ default_T @ tar_relative_T
-        self.init_peg_T = hole_T @ default_T @ relative_T           
+        self.init_peg_T = hole_T @ default_T @ relative_T
         self.peg_T = self.tar_peg_T
         self.set_peg_pose()
 
@@ -317,13 +253,14 @@ class env:
         camera_q = tf.rot_matrix_to_quat(self.camera_T[:3, :3])
         camera_pos = self.camera_T[:3, 3]
         self.camera.set_world_pose(camera_pos, camera_q)
-        
-        
-    
+
+    def load_model(self, model):
+        self.model = model
+
     def run(self):
         # self.model.test()
         self.count += 1
-        if self.eva_count > 200:
+        if self.eva_count > 1000:
             print(f"success rate: {self.success_count / self.eva_count}")
             print(f"rot error: {self.total_rot_error / self.success_count}")
             print(f"pos error: {self.total_pos_error / self.success_count}")
@@ -337,7 +274,7 @@ class env:
                     self.sample_hand_error()
                 self.set_peg_pose()
                 self.set_camera_pose()
-                if self.count == 20 :
+                if self.count == 20:
                     img = self.camera.get_rgba()[:, :, :3]
                     segment_data = self.camera._custom_annotators[
                         "semantic_segmentation"
@@ -349,39 +286,38 @@ class env:
                     seg_img = np.zeros_like(img)
                     if "peg" in segment_id.keys():
                         self.mask = segment_data["data"] == segment_id["peg"]
-                        
+
                         seg_img[self.mask] = img[self.mask]
-                        np.save("/home/chenyuxi/project/img-to-img-diffusion/test_img/mask.npy", self.mask)
-                        cv2.imwrite("/home/chenyuxi/project/img-to-img-diffusion/test_img/seg_img.png", seg_img)
-                        cv2.imwrite("/home/chenyuxi/project/img-to-img-diffusion/test_img/img.png", img)
-                        pil_img = Image.fromarray(cv2.cvtColor(seg_img, cv2.COLOR_BGR2RGB))
-                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                        model = self.load_model()
-                        self.img_process = torchvision.transforms.Compose(
-                            [
-                                torchvision.transforms.Resize((240, 320)),
-                                torchvision.transforms.ToTensor(),
-                                torchvision.transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-                            ]
+                        np.save("./test_img/mask.npy", self.mask)
+                        cv2.imwrite("./test_img/seg_img.png", seg_img)
+                        cv2.imwrite("./test_img/img.png", img)
+                        pil_img = Image.fromarray(
+                            cv2.cvtColor(seg_img, cv2.COLOR_BGR2RGB)
                         )
-                        self.reversed_img_process = torchvision.transforms.Resize((480, 640))
-                        cv2.imwrite("/home/chenyuxi/project/img-to-img-diffusion/test_img/img.png", img)
-                        cond_img = self.img_process(pil_img).to("cuda:1")
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+                        cv2.imwrite("./test_img/img.png", img)
+                        cond_img = self.img_process(pil_img).to("cuda:0")
                         cond_img = cond_img.unsqueeze(0)
-                        self.ref_img = model.eval(cond_img)
-                        self.ref_img = np.transpose(self.reversed_img_process(self.ref_img).squeeze(0).numpy(), (1,2,0))
-                        self.ref_img = ((self.ref_img + 1) * 127.5).round().astype(np.uint8)
-                        Image.fromarray(self.ref_img).save("/home/chenyuxi/project/img-to-img-diffusion/test_img/ref_img.png")
+                        self.ref_img = self.model.eval(cond_img)
+                        self.ref_img = np.transpose(
+                            self.reversed_img_process(self.ref_img).squeeze(0).numpy(),
+                            (1, 2, 0),
+                        )
+                        self.ref_img = (
+                            ((self.ref_img + 1) * 127.5).round().astype(np.uint8)
+                        )
+                        Image.fromarray(self.ref_img).save("./test_img/ref_img.png")
                         tar_img = self.ref_img
                         # tar_img = img
                         tar_img[self.mask] = 0
-                        tar_depth = self.camera.get_depth() 
+                        tar_depth = self.camera.get_depth()
                         tar_frame = Frame(
                             camera=self.pinhole_camera,
                             color=tar_img,
                             depth=tar_depth,
                             seg=None,
-                            wcT=np.eye(4)
+                            wcT=np.eye(4),
                         )
                         self.policy.set_desired(tar_frame)
                         self.peg_T = self.init_peg_T
@@ -390,7 +326,7 @@ class env:
                         self.sample_hand_error()
                         self.set_camera_pose()
                 elif self.count > 30:
-                    
+
                     cur_img = self.camera.get_rgba()[:, :, :3]
                     cur_img = cv2.cvtColor(cur_img, cv2.COLOR_BGR2RGB)
                     # cur_pil_img = Image.fromarray(cv2.cvtColor(cur_img, cv2.COLOR_BGR2RGB))
@@ -404,7 +340,7 @@ class env:
                         color=cur_img,
                         depth=depth_img,
                         seg=None,
-                        wcT=np.eye(4)
+                        wcT=np.eye(4),
                     )
                     try:
                         vel, aux = self.policy.compute_velocity(cur_frame)
@@ -421,15 +357,21 @@ class env:
                     trans_vel[3] = vel[5]
                     trans_vel[4] = -1 * vel[3]
                     trans_vel[5] = -1 * vel[4]
-                    
+
                     # cv2.imshow("current image", cur_img)
                     cv2.imshow("desired image", depth_img)
                     cv2.imshow("desired | current", aux["plottings"])
                     cv2.waitKey(1)
                     # next_camera_T = action.action(self.camera_T, vel, 1/30)
-                    next_camera_T = tf.calc_pose_from_vel(self.camera_T, trans_vel, 1/30)
+                    next_camera_T = tf.calc_pose_from_vel(
+                        self.camera_T, trans_vel, 1 / 30
+                    )
                     # print(next_camera_T)
-                    self.peg_T = next_camera_T @ np.linalg.inv(self.camera_to_end_effector_trans_matrix) @ np.linalg.inv(self.hand_error_T)
+                    self.peg_T = (
+                        next_camera_T
+                        @ np.linalg.inv(self.camera_to_end_effector_trans_matrix)
+                        @ np.linalg.inv(self.hand_error_T)
+                    )
                     error = self.peg_T @ np.linalg.inv(self.tar_peg_T)
                     pos_error = np.linalg.norm(error[:3, 3]) * 1000.0
                     rot = R.from_matrix(error[:3, :3]).as_rotvec()
@@ -439,7 +381,7 @@ class env:
                     # self.set_peg_pose()
                     # self.set_camera_pose()
                     # print(self.count)
-                
+
                 if self.count > 300:
                     self.count = 0
                     error = self.peg_T @ np.linalg.inv(self.tar_peg_T)
@@ -455,61 +397,6 @@ class env:
                     self.eva_count += 1
                     print(f"success rate: {self.success_count / self.eva_count}")
                     self.peg_T = self.tar_peg_T
-                    
-                        
-                    
-                    
-                                        
-                    
-                
-    def load_model(self):
-        print(torch.cuda.current_device())
-        parser = argparse.ArgumentParser()
-        parser.add_argument(
-            "-c",
-            "--config",
-            type=str,
-            default="config/vs.json",
-            help="JSON file for configuration",
-        )
-        parser.add_argument(
-            "-p",
-            "--phase",
-            type=str,
-            choices=["train", "test"],
-            help="Run train or test",
-            default="train",
-        )
-        parser.add_argument(
-            "-b", "--batch", type=int, default=None, help="Batch size in every gpu"
-        )
-        parser.add_argument("-gpu", "--gpu_ids", type=str, default=None)
-        parser.add_argument("-d", "--debug", action="store_true")
-        parser.add_argument("-P", "--port", default="21012", type=str)
-
-        """ parser configs """
-        args = parser.parse_args()
-        opt = Praser.parse(args)
-
-        """ cuda devices """
-        gpu_str = ",".join(str(x) for x in opt["gpu_ids"])
-
-        # os.environ["CUDA_VISIBLE_DEVICES"] = gpu_str
-        if len(opt["gpu_ids"]) == 1:
-            torch.cuda.set_device(opt["gpu_ids"][0])
-        
-        print("export CUDA_VISIBLE_DEVICES={}".format(gpu_str))
-        """ use DistributedDataParallel(DDP) and multiprocessing for multi-gpu training"""
-        # [Todo]: multi GPU on multi machine
-        if opt["distributed"]:
-            ngpus_per_node = len(opt["gpu_ids"])  # or torch.cuda.device_count()
-            opt["world_size"] = ngpus_per_node
-            opt["init_method"] = "tcp://127.0.0.1:" + args.port
-            mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, opt))
-        else:
-            opt["world_size"] = 1
-            return main_worker(0, 1, opt)
-            
 
     def add_object(
         self,
@@ -519,7 +406,7 @@ class env:
         fixed: bool = False,
         collision: bool = False,
         approx: str = "none",
-        **kwargs
+        **kwargs,
     ):
         add_reference_to_stage(usd_path, prim_path)
 

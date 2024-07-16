@@ -11,11 +11,11 @@ camera = PinholeCamera(
     cx=330.48983765,
     cy=233.84162903,
 )
-ref_img = cv2.imread("/home/chenyuxi/project/img-to-img-diffusion/test_img/ref_img.png")
-cur_img = cv2.imread("/home/chenyuxi/project/img-to-img-diffusion/test_img/img.png")
+ref_img = cv2.imread("./test_img/ref_img.png")
+cur_img = cv2.imread("./test_img/img.png")
 ref_img = cv2.cvtColor(ref_img, cv2.COLOR_BGR2RGB)
 cur_img = cv2.cvtColor(cur_img, cv2.COLOR_BGR2RGB)
-mask = np.load("/home/chenyuxi/project/img-to-img-diffusion/test_img/mask.npy")
+mask = np.load("./test_img/mask.npy")
 cur_img[mask] = 0
 ref_img[mask] = 0
 policy = IBVS()

@@ -1,0 +1,8 @@
+diffusion:
+    success rate: 0.8756218905472637
+    rot error: 3.079390591622985
+    pos error: 4.3075017401950895
+ibvs:
+    success rate: 0.9054726368159204
+    rot error: 0.6166339933525256
+    pos error: 0.9414750987886128
