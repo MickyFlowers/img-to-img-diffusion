@@ -1,5 +1,5 @@
 # myself
-test_img/*
+
 experiments/*
 datasets/*
 !experiments/clean.sh
@@ -12,6 +12,8 @@ __pycache__/
 # C extensions
 *.so
 logs/
+test_data/
+test_img/
 # Distribution / packaging
 .Python
 build/
