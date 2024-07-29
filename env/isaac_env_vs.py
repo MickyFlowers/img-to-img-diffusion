@@ -299,14 +299,14 @@ class env:
                         cv2.imwrite("./test_img/img.png", img)
                         cond_img = self.img_process(pil_img).to("cuda:0")
                         cond_img = cond_img.unsqueeze(0)
-                        ref_img = self.model.eval(cond_img)
-                        ref_img = np.transpose(
-                            self.reversed_img_process(ref_img).squeeze(0).numpy(),
-                            (1, 2, 0),
-                        )
-                        ref_img = ((ref_img + 1) * 127.5).round().astype(np.uint8)
-                        self.tar_img = ref_img
-                        # self.tar_img = img
+                        # ref_img = self.model.eval(cond_img)
+                        # ref_img = np.transpose(
+                        #     self.reversed_img_process(ref_img).squeeze(0).numpy(),
+                        #     (1, 2, 0),
+                        # )
+                        # ref_img = ((ref_img + 1) * 127.5).round().astype(np.uint8)
+                        # self.tar_img = ref_img
+                        self.tar_img = img
                         self.tar_depth = self.camera.get_depth()
                         self.peg_T = self.init_peg_T
                     else:

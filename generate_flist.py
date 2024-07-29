@@ -1,9 +1,9 @@
 import os
 import shutil
 
-data_root = "/cyx/data/vs/fixed_relative_pose_img-2"
+data_root = "../data/real_world_data"
 flist = []
-fo = open(os.path.join(data_root, "train.flist"), "w")
-for i in range(100000):
+fo = open(os.path.join(data_root, "train_debug.flist"), "w")
+for i in range(16):
     img = "img-{}".format(i)
     fo.write(img + "\n")
