@@ -19,9 +19,8 @@ import torchvision
 import os
 import omni.isaac.core.utils.prims as prims_utils
 from PIL import Image
-from tools.perception import Frame, PinholeCamera
-from tools.ibvs import IBVS
-import tools.action as action
+import tools.sensor.camera as cam
+from tools.algo.ibvs import IBVS
 
 
 class env:
@@ -170,15 +169,16 @@ class env:
                 np.array([0.0, 0.0, 0.0]), extrinsic=False
             ),
         )
-        self.policy = IBVS(use_median_depth=False)
-        self.pinhole_camera = PinholeCamera(
-            width=640,
-            height=480,
+
+        self.pinhole_camera = cam.Camera(
             fx=616.56402588,
             fy=616.59606934,
             cx=330.48983765,
             cy=233.84162903,
+            width=640,
+            height=480,
         )
+        self.policy = IBVS(self.pinhole_camera)
         self.reset()
 
     def setCameraParam(self):
@@ -299,27 +299,15 @@ class env:
                         cv2.imwrite("./test_img/img.png", img)
                         cond_img = self.img_process(pil_img).to("cuda:0")
                         cond_img = cond_img.unsqueeze(0)
-                        self.ref_img = self.model.eval(cond_img)
-                        self.ref_img = np.transpose(
-                            self.reversed_img_process(self.ref_img).squeeze(0).numpy(),
+                        ref_img = self.model.eval(cond_img)
+                        ref_img = np.transpose(
+                            self.reversed_img_process(ref_img).squeeze(0).numpy(),
                             (1, 2, 0),
                         )
-                        self.ref_img = (
-                            ((self.ref_img + 1) * 127.5).round().astype(np.uint8)
-                        )
-                        Image.fromarray(self.ref_img).save("./test_img/ref_img.png")
-                        tar_img = self.ref_img
-                        # tar_img = img
-                        tar_img[self.mask] = 0
-                        tar_depth = self.camera.get_depth()
-                        tar_frame = Frame(
-                            camera=self.pinhole_camera,
-                            color=tar_img,
-                            depth=tar_depth,
-                            seg=None,
-                            wcT=np.eye(4),
-                        )
-                        self.policy.set_desired(tar_frame)
+                        ref_img = ((ref_img + 1) * 127.5).round().astype(np.uint8)
+                        self.tar_img = ref_img
+                        # self.tar_img = img
+                        self.tar_depth = self.camera.get_depth()
                         self.peg_T = self.init_peg_T
                     else:
                         self.count = 0
@@ -334,16 +322,12 @@ class env:
                     # cur_img = np.transpose(self.reversed_img_process(cur_img).numpy(), (1,2,0))
                     # cur_img = ((cur_img + 1) * 127.5).round().astype(np.uint8)
                     depth_img = self.camera.get_depth()
-                    cur_img[self.mask] = 0
-                    cur_frame = Frame(
-                        camera=self.pinhole_camera,
-                        color=cur_img,
-                        depth=depth_img,
-                        seg=None,
-                        wcT=np.eye(4),
-                    )
+
                     try:
-                        vel, aux = self.policy.compute_velocity(cur_frame)
+                        vel, score, plottings = self.policy.cal_vel_from_img(
+                            self.tar_img, cur_img, self.tar_depth, depth_img, self.mask
+                        )
+                        # print(vel)
                     except:
                         print("Visual Servo Failed!!")
                         self.eva_count += 1
@@ -360,7 +344,7 @@ class env:
 
                     # cv2.imshow("current image", cur_img)
                     cv2.imshow("desired image", depth_img)
-                    cv2.imshow("desired | current", aux["plottings"])
+                    cv2.imshow("desired | current", plottings)
                     cv2.waitKey(1)
                     # next_camera_T = action.action(self.camera_T, vel, 1/30)
                     next_camera_T = tf.calc_pose_from_vel(

@@ -111,7 +111,7 @@ class Classic(FrontendBase):
         )
 
         good_mask = dists[:, 0] < 0.75 * dists[:, 1]
-        # good_mask = dists[:, 0] < 1.2 * dists[:, 1]
+        # good_mask = dists[:, 0] < 1.2 * distqs[:, 1]
         tar_index = indices[good_mask, 0]
         cur_index = np.nonzero(good_mask)[0]
         matches = np.stack([tar_index, cur_index], axis=-1)

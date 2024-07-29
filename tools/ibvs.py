@@ -52,7 +52,7 @@ class IBVS(BasePolicy):
             Z_cur = np.median(Z_cur)
         # Z_tar = np.linalg.norm(self.desired_frame.wcT[:3, 3])
         # Z_cur = np.linalg.norm(frame.wcT[:3, 3])
-
+        
         vel = classic_visual_servo.match_based.ibvs(
             fp_cur=fp_cur, Z_cur=Z_cur,
             fp_tar=fp_tar, Z_tar=Z_tar,
