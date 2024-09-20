@@ -1,21 +1,26 @@
-from omni.isaac.kit import SimulationApp
+import sys
 
-app_config = {"headless": True}
-simulation_app = SimulationApp(app_config)
+sys.path.append("./")
+from xlib.algo.ibvs import IBVS
+from xlib.device.manipulator.ur_robot import UR
+from xlib.device.robotiq import robotiq_gripper
+from xlib.device.sensor.camera import RealSenseCamera
+from xlib.sam.sam_gui import SAM
+from xlib.algo.transforms import linkVelTransform
+import numpy as np
+import cv2
 import os
 import argparse
-import os
 import warnings
 import torch
 import torch.multiprocessing as mp
-
-# import copy
 from core.logger import VisualWriter, InfoLogger
 import core.praser as Praser
 import core.util as Util
 from data import define_dataloader
 from models import create_model, define_network, define_loss, define_metric
-from env.isaac_env_vs import env
+from PIL import Image
+import torchvision
 
 
 def main_worker(gpu, ngpus_per_node, opt):
@@ -87,7 +92,7 @@ def load_model():
         "-c",
         "--config",
         type=str,
-        default="config/vs_sim.json",
+        default="config/vs.json",
         help="JSON file for configuration",
     )
     parser.add_argument(
@@ -129,17 +134,73 @@ def load_model():
         return main_worker(0, 1, opt)
 
 
-def main():
-    root_path = os.path.dirname(os.path.realpath(__file__))
-    model = load_model()
-    isaac_env = env(root_path=root_path, render=True, physics_dt=1 / 60.0)
-    isaac_env.load_model(model)
-    # isaac_env.model.test()
-    while simulation_app.is_running():
-        isaac_env.run()
+camera = RealSenseCamera(exposure_time=500)
+ip = "192.168.1.102"
+ur_robot = UR(ip)
+# # activate gripper
+# gripper = robotiq_gripper.RobotiqGripper()
+# gripper.connect(ip, 63352)
+# gripper.activate()
 
-    simulation_app.close()
+ibvs_controller = IBVS(camera)
+sam = SAM()
+root_path = os.path.dirname(os.path.realpath(__file__))
+model = load_model()
 
+# static variable
+tcp_pose = np.load("real_world_experiment/tcp_pose/vs_tcp_pose.npy")
+camera2tcp = np.load("calibration_data/result/camera2tcp.npy")
+img_process = torchvision.transforms.Compose(
+    [
+        torchvision.transforms.Resize((240, 320)),
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+    ]
+)
+reversed_img_process = torchvision.transforms.Resize((240, 320))
+# move to tcp_pose
+ur_robot.moveToPose(tcp_pose, vel=0.1, acc=0.1)
+# while True:
+#     key = input("Press 'o' to open gripper: ")
+#     if key.lower() == "o":
+#         gripper.move_and_wait_for_pos(0, 255, 100)
+#         break
+# while True:
+#     key = input("Press 'c' to close gripper: ")
+#     if key.lower() == "c":
+#         gripper.move_and_wait_for_pos(255, 255, 100)
+#         break
 
-if __name__ == "__main__":
-    main()
+while True:
+    key = input("Press 'p' to capture image: ")
+    if key.lower() == "p":
+        break
+# get frame
+# color_img, depth_img = camera.get_frame()
+# print(color_img.shape)
+# seg_img, mask = sam.segment_img(color_img)
+# pil_img = Image.fromarray(cv2.cvtColor(seg_img, cv2.COLOR_BGR2RGB))
+# cond_img = img_process(pil_img).to("cuda:0")
+# cond_img = cond_img.unsqueeze(0)
+# ref_img = model.eval(cond_img)
+# ref_img = np.transpose(
+#     reversed_img_process(ref_img).squeeze(0).numpy(),
+#     (1, 2, 0),
+# )
+# ref_img = ((ref_img + 1) * 127.5).round().astype(np.uint8)
+# ref_img = cv2.cvtColor(ref_img, cv2.COLOR_RGB2BGR)
+# cv2.imwrite("real_world_experiment/ref_img/ref_img.jpg", ref_img)
+# np.save("real_world_experiment/ref_img/mask.npy", mask)
+ref_img = cv2.imread("real_world_experiment/ref_img/ref_img_out.jpg")
+mask = np.load("real_world_experiment/ref_img/mask.npy")
+while True:
+    color_img, depth_img = camera.get_frame()
+    ref_depth = np.zeros_like(depth_img)
+    ref_depth[:] = 0.3
+    vel, score, match_img = ibvs_controller.cal_vel_from_img(
+        ref_img, color_img, ref_depth, depth_img, mask, True
+    )
+    vel = linkVelTransform(vel, camera2tcp)
+    ur_robot.applyTcpVel(vel * 0.15)
+    cv2.imshow("match_img", match_img)
+    cv2.waitKey(1)

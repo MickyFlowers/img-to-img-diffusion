@@ -11,7 +11,7 @@
         "tb_logger": "tb_logger",
         "results": "results",
         "checkpoint": "checkpoint",
-        "resume_state": "/home/cyx/chenyuxi/project/img-to-img-diffusion/experiments/real_world_2/models/2330"
+        "resume_state": "/home/cyx/chenyuxi/project/img-to-img-diffusion/experiments/real_world/models/2320"
     },
     "datasets": {
         "train": {
@@ -21,8 +21,8 @@
                     "VSDataset"
                 ],
                 "args": {
-                    "data_root": "/home/cyx/chenyuxi/project/data/real_world_data_4",
-                    "data_flist": "/home/cyx/chenyuxi/project/data/real_world_data_4/train.flist",
+                    "data_root": "/home/cyx/chenyuxi/project/data/real_world_data_3",
+                    "data_flist": "/home/cyx/chenyuxi/project/data/real_world_data_3/train.flist",
                     "data_len": -1,
                     "image_size": [
                         240,

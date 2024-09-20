@@ -297,8 +297,8 @@ class env:
                         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
                         cv2.imwrite("./test_img/img.png", img)
-                        cond_img = self.img_process(pil_img).to("cuda:0")
-                        cond_img = cond_img.unsqueeze(0)
+                        # cond_img = self.img_process(pil_img).to("cuda:0")
+                        # cond_img = cond_img.unsqueeze(0)
                         # ref_img = self.model.eval(cond_img)
                         # ref_img = np.transpose(
                         #     self.reversed_img_process(ref_img).squeeze(0).numpy(),
@@ -307,7 +307,9 @@ class env:
                         # ref_img = ((ref_img + 1) * 127.5).round().astype(np.uint8)
                         # self.tar_img = ref_img
                         self.tar_img = img
-                        self.tar_depth = self.camera.get_depth()
+                        tar_depth = self.camera.get_depth()
+                        self.tar_depth = np.zeros_like(tar_depth)
+                        self.tar_depth[:] = 0.3
                         self.peg_T = self.init_peg_T
                     else:
                         self.count = 0
@@ -325,7 +327,7 @@ class env:
 
                     try:
                         vel, score, plottings = self.policy.cal_vel_from_img(
-                            self.tar_img, cur_img, self.tar_depth, depth_img, self.mask
+                            self.tar_img, cur_img, self.tar_depth, depth_img, self.mask, True
                         )
                         # print(vel)
                     except:
@@ -360,13 +362,13 @@ class env:
                     pos_error = np.linalg.norm(error[:3, 3]) * 1000.0
                     rot = R.from_matrix(error[:3, :3]).as_rotvec()
                     rot_error = np.linalg.norm(rot) / np.pi * 180
-                    # print("pos error: ", pos_error)
-                    # print("rot error: ", rot_error)
+                    print("pos error: ", pos_error)
+                    print("rot error: ", rot_error)
                     # self.set_peg_pose()
                     # self.set_camera_pose()
                     # print(self.count)
 
-                if self.count > 300:
+                if self.count > 1e5:
                     self.count = 0
                     error = self.peg_T @ np.linalg.inv(self.tar_peg_T)
                     pos_error = np.linalg.norm(error[:3, 3]) * 1000.0

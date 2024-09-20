@@ -1,7 +1,7 @@
 {
     "name": "vs",
     "gpu_ids": [
-        0
+        0, 1, 2
     ],
     "seed": -1,
     "finetune_norm": false,
@@ -11,7 +11,7 @@
         "tb_logger": "tb_logger",
         "results": "results",
         "checkpoint": "checkpoint",
-        "resume_state": "/home/cyx/chenyuxi/project/img-to-img-diffusion/experiments/real_world_2/models/2330"
+        "resume_state": null
     },
     "datasets": {
         "train": {
@@ -21,26 +21,26 @@
                     "VSDataset"
                 ],
                 "args": {
-                    "data_root": "/home/cyx/chenyuxi/project/data/real_world_data_4",
-                    "data_flist": "/home/cyx/chenyuxi/project/data/real_world_data_4/train.flist",
+                    "data_root": "/yuxi/data/vs/real_world_data_3",
+                    "data_flist": "/yuxi/data/vs/real_world_data_3/train.flist",
                     "data_len": -1,
                     "image_size": [
-                        240,
-                        320
+                        480,
+                        640
                     ]
                 }
             },
             "dataloader": {
                 "validation_split": 8,
                 "args": {
-                    "batch_size": 16,
+                    "batch_size": 4,
                     "num_workers": 4,
                     "shuffle": true,
                     "pin_memory": true,
                     "drop_last": true
                 },
                 "val_args": {
-                    "batch_size": 8,
+                    "batch_size": 4,
                     "num_workers": 4,
                     "shuffle": false,
                     "pin_memory": true,
@@ -52,13 +52,13 @@
             "which_dataset": {
                 "name": "VSDataset",
                 "args": {
-                    "data_root": "/home/cyx/chenyuxi/project/data/real_world_data_3",
-                    "data_flist": "/home/cyx/chenyuxi/project/data/real_world_data_3/train.flist"
+                    "data_root": "/yuxi/data/vs/real_world_data_3",
+                    "data_flist": "/yuxi/data/vs/real_world_data_3/train.flist"
                 }
             },
             "dataloader": {
                 "args": {
-                    "batch_size": 8,
+                    "batch_size": 4,
                     "num_workers": 4,
                     "pin_memory": true
                 }
