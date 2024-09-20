@@ -1,3 +1,4 @@
 [submodule "xlib"]
 	path = xlib
 	url = https://github.com/MickyFlowers/xlib.git
+	branch = main
